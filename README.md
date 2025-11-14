@@ -94,7 +94,15 @@ Open `notebooks/00_setup_check.ipynb` notebook and run all cells.
 
 ### Run MLflow
 
-Open a separate terminal and run MLflow server:
+Open a separate terminal and run MLflow server.
+
+Activate virtual environment:
+
+```bash
+source venv/bin/activate
+```
+
+Run MLflow server:
 
 ```bash
 ./venv/bin/mlflow server --backend-store-uri sqlite:///data/mlflow.db --port 5005

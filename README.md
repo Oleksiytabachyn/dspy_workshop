@@ -9,6 +9,8 @@ PyCon Ireland 2025
 * How to make multi-step pipelines
 * How to evaluate and optimize your LLM applications
 
+Groq provides free tier access. We will be using `Llama 3.1 8B` model and `GPT OSS 20B` model for the workshop.
+
 ## Pre-requisites
 
 * Python 3.12+
@@ -77,12 +79,30 @@ GROQ_API_KEY= gsk_YXEdbRF7...   # your_api_key
 Run from workshop directory `dspy_workshop`:
 
 ```bash
-jupyter notebook
+./venv/bin/jupyter lab
 ```
 
 it will open Jupyter Notebook in your browser on the page: http://localhost:8888/tree
 
+![jupyter notebook](assets/jupyter_notebook.png)
 
+### Validate Setup
+
+Open `notebooks/00_setup_check.ipynb` notebook and run all cells.
+
+![jupyter notebook](assets/setup_check.png)
+
+### Run MLflow
+
+Open a separate terminal and run MLflow server:
+
+```bash
+./venv/bin/mlflow server --backend-store-uri sqlite:///data/mlflow.db --port 5005
+```
+
+Check MLflow UI at http://localhost:5005/ or http://127.0.0.1:5005
+
+We will need it for evaluation and optimization notebooks.
 
 ## Pre-requisites
 

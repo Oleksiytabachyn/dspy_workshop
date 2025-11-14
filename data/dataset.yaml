@@ -1,0 +1,542 @@
+workshop:
+    - id: 1
+      name: "Syntax #1"
+      comment: |
+          Missing colon after else (easy to miss in long blocks)
+      traceback: |
+          expected ':' (<unknown>, line 6)
+      content: |
+          def process_data(value):
+              if value > 100:
+                  return "high"
+              elif value > 50:
+                  return "medium"
+              else
+                  return "low"
+      test_case: |
+          assert process_data(120) == "high"
+          assert process_data(75) == "medium"
+          assert process_data(30) == "low"
+    - id: 2
+      name: "Syntax #2"
+      comment: |
+          Incorrect dictionary syntax - using = instead of :
+      traceback: |
+          ':' expected after dictionary key (<unknown>, line 4)
+      content: |
+          def create_user_profile(name, age, email):
+              profile = {
+                  'name': name,
+                  'age' = age,
+                  'email': email,
+                  'active': True
+              }
+              return profile
+      test_case: |
+          result = create_user_profile("Alice", 25, "alice@example.com")
+          assert result['name'] == "Alice"
+          assert result['age'] == 25
+          assert result['email'] == "alice@example.com"
+          assert result['active'] == True
+    - id: 3
+      name: "Syntax #3"
+      comment: |
+          Missing closing bracket in list comprehension (nested structure)
+          Missing ] before return
+      traceback: |
+          '[' was never closed (<unknown>, line 2)
+      content: |
+          def filter_data(items):
+              result = [x for x in items
+                        if x.startswith('test')
+                        if x.endswith('.py')
+              return result
+      test_case: |
+          items = ['test_file.py', 'test_data.txt', 'main.py', 'test_utils.py']
+          result = filter_data(items)
+          assert result == ['test_file.py', 'test_utils.py']
+          assert len(result) == 2
+    - id: 4
+      name: "Syntax #4"
+      comment: |
+          Incorrect string continuation (missing operator)
+          Missing + operator after "WHERE"
+          Requires a "\" at the end of the line
+      traceback: |
+          invalid syntax (<unknown>, line 2)
+      content: |
+          def build_query(table, columns, condition):
+              query = "SELECT " + ", ".join(columns) +
+                      " FROM " + table +
+                      " WHERE " condition
+              return query
+      test_case: |
+          result = build_query("users", ["id", "name", "email"], "active = 1")
+          assert "SELECT id, name, email" in result
+          assert "FROM users" in result
+          assert "WHERE active = 1" in result
+    - id: 5
+      name: "Syntax #5"
+      comment: |
+          Mixed indentation (tabs vs spaces - looks fine but isn't)
+          One line used tabs
+      traceback: |
+          inconsistent use of tabs and spaces in indentation (<unknown>, line 8)
+      content: |
+          class DataProcessor:
+              def __init__(self, data):
+                  self.data = data
+
+              def process(self):
+                  for item in self.data:
+                      if item.valid:
+                      	result = self._transform(item)
+                        self._save(result)
+      test_case: |
+          class Item:
+              def __init__(self, name, valid=True):
+                  self.name = name
+                  self.valid = valid
+              def __str__(self):
+                  return self.name
+
+          class TestProcessor(DataProcessor):
+              def __init__(self, data):
+                  super().__init__(data)
+                  self.processed = []
+              def _transform(self, item):
+                  return item.name.upper()
+              def _save(self, result):
+                  self.processed.append(result)
+
+          items = [Item("item1"), Item("item2", False), Item("item3")]
+          processor = TestProcessor(items)
+          processor.process()
+          assert "ITEM1" in processor.processed
+          assert "ITEM3" in processor.processed
+          assert len(processor.processed) == 2
+    - id: 6
+      name: "Mutable Default"
+      comment: |
+          Default mutable argument trap
+          Bug: The default list is shared across all calls!
+          manager.add_task(1) and manager.add_task(2) will share the same list
+      traceback: ""
+      content: |
+          class TaskManager:
+              def __init__(self):
+                  self.all_tasks = []
+
+              def add_task(self, user_id, tasks=[]):
+                  tasks.append(f"Task for user {user_id}")
+                  self.all_tasks.extend(tasks)
+                  return tasks
+      test_case: |
+          manager = TaskManager()
+          result1 = manager.add_task(1)
+          result2 = manager.add_task(2)
+          assert len(result1) == 1  # Should pass but fails! result1 has 2 items
+    - id: 7
+      name: "Off-by-One"
+      comment: |
+          Off-by-one error in range
+          Bug: should be range(len(middle_grades))
+          This skips the last grade in the middle_grades list!
+      traceback: ""
+      content: |
+          def calculate_average_grades(grades):
+              """Calculate average excluding highest and lowest grade"""
+              sorted_grades = sorted(grades)
+              middle_grades = sorted_grades[1:len(sorted_grades)-1]
+
+              total = 0
+              for i in range(len(middle_grades) - 1):
+                  total += middle_grades[i]
+
+              return total / len(middle_grades)
+      test_case: |
+          result = calculate_average_grades([10, 20, 30, 40, 50])
+          assert result == 30.0  # Should pass but fails! Gets 25.0 (skips last middle grade)
+    - id: 8
+      name: "List Mutation"
+      comment: |
+          Modifying list while iterating
+          Bug: modifying list during iteration - item.remove
+          This will skip elements and not remove all duplicates correctly
+      traceback: ""
+      content: |
+          def remove_duplicates(items):
+              """Remove duplicate items from list"""
+              seen = set()
+              for item in items:
+                  if item in seen:
+                      items.remove(item)
+                  else:
+                      seen.add(item)
+              return items
+      test_case: |
+          result = remove_duplicates([1, 2, 2, 3, 3, 3, 4])
+          assert result == [1, 2, 3, 4]  # Should pass but fails! Skips elements during iteration
+    - id: 9
+      name: "Variable Scope"
+      comment: |
+          Incorrect variable scope in loop
+          Subtract the amount twice
+          Bug: The total variable is reused/overwritten incorrectly in refund logic
+      traceback: ""
+      content: |
+          def process_transactions(transactions):
+              """Process multiple transactions and return results"""
+              results = []
+              total = 0
+
+              for transaction in transactions:
+                  amount = transaction['amount']
+
+                  if transaction['type'] == 'charge':
+                      total = total - amount
+
+                  if transaction['type'] == 'refund':
+                      total = total - (amount * 2)
+
+                  results.append({
+                      'id': transaction['id'],
+                      'running_total': total
+                  })
+
+              return results, total
+      test_case: |
+          transactions = [
+              {'id': 1, 'amount': 50, 'type': 'charge'},
+              {'id': 2, 'amount': 30, 'type': 'refund'},
+              {'id': 3, 'amount': 20, 'type': 'charge'}
+          ]
+          results, total = process_transactions(transactions)
+          # Correct path: 50 - 30 + 20 = 40
+          # Buggy path: 50 + 30 - 60 + 20 = 40 (same final!)
+          # But running total after refund differs:
+          # Correct: after refund should be 20
+          # Buggy: after refund is -10
+          assert results[1]['running_total'] == 40  # Should pass but fails! Gets -10
+    - id: 10
+      name: "Shallow Copy"
+      comment: |
+          Shallow copy problem
+          Bug: should be a deep copy - in __init__
+          Bug: returns reference, not copy - in get_default_config
+          Bug: Modifying 'default' also modifies 'original_settings' and 'self.settings'
+      traceback: ""
+      content: |
+          class Configuration:
+              def __init__(self, settings):
+                  self.settings = settings
+
+              def update_setting(self, key, value):
+                  self.settings[key] = value
+
+              def get_default_config(self):
+                  default = self.settings
+                  default['mode'] = 'default'
+                  return default
+
+          # Using this class:
+          original_settings = {'mode': 'production', 'debug': False}
+          config = Configuration(original_settings)
+          default = config.get_default_config()
+      test_case: |
+          original_settings = {'mode': 'production', 'debug': False}
+          config = Configuration(original_settings)
+          default = config.get_default_config()
+          assert original_settings['mode'] == 'production'  # Should pass but fails! Gets 'default'
+    - id: 11
+      name: "Int Division"
+      comment: |
+          Integer division creating unexpected results
+          Round to nearest integer by using int()
+          Bug: In Python 2 style or with //, this would use integer division
+          Bug: in Python 3, int() truncates: 74.9% becomes 74, failing students unfairly
+          Returns float, but could be integer division
+      traceback: ""
+      content: |
+          def calculate_percentage(correct, total):
+              """Calculate percentage of correct answers"""
+              percentage = (correct / total) * 100
+              return int(percentage)
+
+          def get_passing_students(students):
+            passing = 0
+            for student in students:
+              score = calculate_percentage(student['correct'], student['total'])
+              if score >= 75:
+                passing += 1
+            return passing / len(students)
+      test_case: |
+          assert calculate_percentage(149, 200) >= 75  # Should pass but fails! Gets 74 (truncated)
+    - id: 12
+      name: "Late Binding"
+      comment: |
+          Late binding closure problem
+          Bug: All functions will use the final value of i (n)
+          funcs = create_multipliers(3)
+          funcs[0](10) returns 30, not 10 (all return same result!)
+      traceback: ""
+      content: |
+          def create_multipliers(n):
+              """Create a list of functions that multiply by 1, 2, 3, ..., n"""
+              multipliers = []
+
+              for i in range(1, n + 1):
+                  multipliers.append(lambda x: x * i)
+
+              return multipliers
+      test_case: |
+          funcs = create_multipliers(3)
+          assert funcs[0](10) == 10  # Should pass but fails! Returns 30 (all use final i value)
+    - id: 13
+      name: "Is vs Equals"
+      comment: |
+          Identity vs equality comparison (is vs ==)
+          Bug: using 'is' instead of '==' for value comparison
+          BUG: identity check instead of equality
+          Works for interned strings but breaks for dynamically created strings
+      traceback: ""
+      content: |
+          def cache_result():
+              """Cache string results for performance"""
+              cache = {}
+              stats = {'computations': 0}
+
+              def get_or_compute(value):
+                  for cached_key in cache:
+                      if cached_key is value:
+                          return cache[cached_key]
+
+                  # Expensive computation
+                  stats['computations'] += 1
+                  computed = value.upper()
+                  cache[value] = computed
+                  return computed
+
+              get_or_compute.stats = stats
+              return get_or_compute
+      test_case: |
+          compute = cache_result()
+          # Use join to create non-interned strings
+          str1 = ''.join(['hello', ' ', 'world'])
+          str2 = ''.join(['hello', ' ', 'world'])
+          # Verify they are equal but not identical
+          assert str1 == str2, "Strings should be equal"
+          assert str1 is not str2, "Strings should be different objects"
+          result1 = compute(str1)
+          result2 = compute(str2)
+          # Bug: computes twice because 'is' check fails
+          assert compute.stats['computations'] == 1, "Expected 1, got " + str(compute.stats['computations'])
+    - id: 14
+      name: "Float Precision"
+      comment: |
+          Float precision and comparison
+          Bug: Direct float comparison
+          Bug: 0.1 + 0.2 != 0.3 in floating point!
+          items = [{'price': 0.1}, {'price': 0.2}]
+          Payment of 0.33 might fail due to float precision errors
+      traceback: ""
+      content: |
+          def calculate_total_price(items):
+              """Calculate total price with tax"""
+              subtotal = 0.0
+
+              for item in items:
+                  subtotal += item['price']
+
+              tax = subtotal * 0.1
+              total = subtotal + tax
+
+              return round(total, 2)
+
+          def validate_payment(items, payment):
+              """Check if payment matches total"""
+              expected = calculate_total_price(items)
+
+              if payment == expected:
+                  return True
+              else:
+                  return False
+      test_case: |
+          # Direct comparison fails: 0.1 + 0.2 produces 0.30000000000000004
+          items = [{'price': 0.1}, {'price': 0.2}]
+          subtotal = 0.1 + 0.2  # This is 0.30000000000000004
+          assert subtotal == 0.3  # Should pass but fails! Float precision issue
+    - id: 15
+      name: "Truthiness Trap"
+      comment: |
+          Boolean truthiness causing unexpected behavior
+          Bug: Using 'or' with truthiness check
+          If value is 0, False, "", [], it returns default!
+          get_user_setting(123, 'notifications', 1) returns 1 instead of 0
+          Because 0 is falsy, so it returns the default value instead!
+      traceback: ""
+      content: |
+          def get_user_setting(user_id, setting_name, default=None):
+              """Retrieve user setting from database"""
+              # Simulating database lookup
+              settings_db = {
+                  123: {'notifications': 0, 'theme': 'dark'},  # 0 means disabled
+                  456: {'notifications': 1, 'theme': 'light'}
+              }
+
+              user_settings = settings_db.get(user_id, {})
+              value = user_settings.get(setting_name)
+
+              return value or default
+      test_case: |
+          result = get_user_setting(123, 'notifications', 1)
+          assert result == 0  # Should pass but fails! Returns 1 (0 is falsy)
+    - id: 16
+      name: "Unhashable Key"
+      comment: |
+          Using unhashable type as dictionary key
+          Bug: user_info is a dict (unhashable), can't be used as key
+          TypeError: unhashable type: 'dict'
+          Bug: Catching wrong exception type (should be TypeError)
+          This will crash with TypeError, not KeyError!
+      traceback: ""
+      content: |
+          def cache_user_data(user_info):
+              """Cache user data using their info as key"""
+              cache = {}
+
+              try:
+                  if user_info in cache:
+                      return cache[user_info]
+
+                  # Expensive API call
+                  data = fetch_user_from_api(user_info['id'])
+                  cache[user_info] = data
+                  return data
+              except KeyError:
+                  return None
+      test_case: |
+          def fetch_user_from_api(user_id):
+              return {'id': user_id, 'name': 'Test'}
+          try:
+              result = cache_user_data({'id': 1, 'name': 'Alice'})
+              assert result is not None  # Should pass but fails! TypeError crashes the function
+          except TypeError:
+              assert False  # Should not reach here - function should handle errors gracefully
+    - id: 17
+      name: "Finally Override"
+      comment: |
+          Finally block overriding return value
+          Bug: Finally always executes and overrides the return!
+          This return overrides the try/except returns - return result
+          Always returns "default" regardless of whether key exists or not!
+      traceback: ""
+      content: |
+          def get_config_value(config, key):
+              """Get configuration value with error handling"""
+              result = None
+
+              try:
+                  result = config[key]
+                  return result
+              except KeyError:
+                  return None
+              finally:
+                  result = "default"
+                  return result
+      test_case: |
+          config = {'database': 'postgres', 'port': 5432}
+          result = get_config_value(config, 'database')
+          assert result == 'postgres'  # Should pass but fails! Finally overrides return to "default"
+    - id: 18
+      name: "Mutable in Set"
+      comment: |
+          Set with mutable objects
+          Bug: Adding list (unhashable) to set
+          # session_data is a list
+          Bug: Bare except catching everything and hiding the real error
+          Misleading error message - actual error is TypeError, not duplicate session
+      traceback: ""
+      content: |
+          class UserSession:
+              def __init__(self, user_id):
+                  self.user_id = user_id
+                  self.active_sessions = set()
+
+              def add_session(self, session_data):
+                  """Track active sessions"""
+                  try:
+                      self.active_sessions.add(session_data)
+                      return True
+                  except Exception:
+                      return False
+      test_case: |
+          session = UserSession(123)
+          try:
+              session.add_session(['token', 'timestamp'])
+              assert False  # Should not reach here
+          except TypeError:
+              assert True  # Should pass! List is unhashable for set
+    - id: 19
+      name: "Dict Modification"
+      comment: |
+          Dictionary modification during iteration with exception masking
+          Bug: modifying dict during iteration
+          Bug: Catching RuntimeError but dict throws different error
+          This bare except will catch it, but loses error information - except
+          Raises RuntimeError in Python 3.8+, but different behavior in older versions
+          The broad except hides what really went wrong
+      traceback: ""
+      content: |
+          def clean_invalid_entries(data_dict):
+              """Remove entries with None values"""
+              try:
+                  for key in data_dict:
+                      if data_dict[key] is None:
+                          del data_dict[key]
+                  return True
+              except RuntimeError as e:
+                  return False
+              except:
+                  return False
+      test_case: |
+          data = {'a': 1, 'b': None, 'c': 3}
+          try:
+              clean_invalid_entries(data)
+              assert False  # Should not reach here
+          except RuntimeError:
+              assert True  # Should pass! Modifying dict during iteration raises RuntimeError
+    - id: 20
+      name: "Get() Confusion"
+      comment: |
+          Dictionary .get() with exception handling confusion
+          Bug: .get() returns None if key missing, doesn't raise exception
+          This will raise AttributeError if permissions is None
+          NoneType has no __contains__
+          Bug: Wrong exception - will never catch AttributeError
+          Bug: Catches AttributeError but doesn't handle it properly
+          Silently continues without logging user ID
+          KeyError handler never executes; AttributeError is silently caught by broad Exception
+      traceback: ""
+      content: |
+          def process_user_permissions(users, permission_type):
+              """Process permissions for all users"""
+              results = []
+
+              for user in users:
+                  try:
+                      permissions = user.get('permissions')
+                      if permission_type in permissions:
+                          results.append(user['id'])
+                  except KeyError:
+                      continue
+                  except Exception as e:
+                      continue
+              return results
+      test_case: |
+          users = [{'id': 1, 'permissions': None}, {'id': 2, 'permissions': ['read', 'write']}]
+          try:
+              process_user_permissions(users, 'read')
+              assert False  # Should not reach here (AttributeError is silently caught)
+          except AttributeError:
+              assert True  # Should pass! None has no __contains__ method
